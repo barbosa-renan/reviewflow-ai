@@ -1,0 +1,19 @@
+# Dependências essenciais para ReviewFlow AI
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-dotenv==1.0.0
+httpx==0.25.0
+
+# AutoGen Agent framework
+autogen-ext
+
+# Para desenvolvimento e teste
+pytest==7.4.0
+pytest-asyncio==0.21.1
+
+# Para logs estruturados (opcional)
+structlog==23.2.0
+
+# Para métricas futuras (opcional)
+prometheus-client==0.18.0
