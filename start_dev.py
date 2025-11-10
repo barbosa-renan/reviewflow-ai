@@ -70,7 +70,7 @@ def run_development_server():
     print("\n💡 Use Ctrl+C para parar o servidor")
     
     try:
-        subprocess.run([sys.executable, 'app.py'])
+        subprocess.run([sys.executable, 'main.py'])
     except KeyboardInterrupt:
         print("\n👋 Servidor parado")
 

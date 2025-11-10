@@ -136,47 +136,47 @@ async def process_review(review: ReviewInput):
         
         validated_review = validate_review_input(review.model_dump())
         
+        # Converter para JSON para o agente
         review_json = validated_review.model_dump_json(indent=2, ensure_ascii=False)
         
+        # Processar com o Workflow Orchestrator
         workflow_agent = app.state.workflow_agent
         
-        from autogen_ext.agents import Runner, trace
-        
-        with trace(f"ReviewFlow Processing - {validated_review.id}"):
-            result = await Runner.run(workflow_agent, review_json)
+        # Executar o processamento
+        result = await workflow_agent.process_review(review_json)
         
         processing_time = time.time() - start_time
         
-        # TODO: Estruturar a resposta do agente
-        # Por enquanto, retornamos um resultado básico
+        if result.get("status") != "success":
+            logger.error(f"❌ Erro no processamento: {result.get('error')}")
+            raise HTTPException(status_code=500, detail=result.get("error"))
+        
+        # Estruturar resultado final
         processing_result = ProcessingResult(
             review_input=validated_review,
             analysis=ReviewAnalysis(
                 validation_status="success",
+                sentiment=result["analysis"].get("sentiment"),
+                sentiment_score=result["analysis"].get("sentiment_score"),
+                categories=result["analysis"].get("categories", []),
+                urgency=result["analysis"].get("urgency"),
+                key_issues=result["analysis"].get("key_issues", []),
                 customer_id=validated_review.customer_id,
                 customer_name=validated_review.customer_name,
-                product_name=validated_review.product_name
+                product_name=validated_review.product_name,
+                confidence_score=result["analysis"].get("confidence_score", 0.0)
             ),
             workflow=WorkflowResult(
                 review_id=validated_review.id,
-                workflow_path="Response_Only",  # Placeholder
-                customer_context={
-                    "tier": "Gold",
-                    "lifetime_value": "High",
-                    "previous_complaints": 0,
-                    "relationship_status": "Regular"
-                },
-                product_context={
-                    "common_issue": False,
-                    "warranty_applicable": True,
-                    "return_eligible": True
-                },
+                workflow_path=result["workflow_path"],
+                customer_context=result["customer_context"],
+                product_context=result["product_context"],
                 agents_triggered=["review_analyzer", "workflow_orchestrator"],
-                tools_used=["get_customer_history"],
-                priority_level=3,
-                estimated_completion_time="2 hours",
+                tools_used=["get_customer_history"] if result.get("customer_context") else [],
+                priority_level=result["priority_level"],
+                estimated_completion_time=result["estimated_completion_time"],
                 sla_status="Within_SLA",
-                strategic_notes="Review processed successfully"
+                strategic_notes=result["strategic_notes"]
             ),
             processing_time=processing_time
         )
